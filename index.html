@@ -187,6 +187,20 @@
 
         bind('leftBtn', 'left'); bind('rightBtn', 'right');
         bind('gasBtn', 'gas'); bind('brakeBtn', 'brake');
+        // Keyboard Support for PC
+window.addEventListener('keydown', (e) => {
+    if (e.key === "ArrowLeft") inputs.left = true;
+    if (e.key === "ArrowRight") inputs.right = true;
+    if (e.key === "ArrowUp" || e.key === " ") inputs.gas = true; // Up or Space for Gas
+    if (e.key === "ArrowDown") inputs.brake = true;
+});
+
+window.addEventListener('keyup', (e) => {
+    if (e.key === "ArrowLeft") inputs.left = false;
+    if (e.key === "ArrowRight") inputs.right = false;
+    if (e.key === "ArrowUp" || e.key === " ") inputs.gas = false;
+    if (e.key === "ArrowDown") inputs.brake = false;
+});
     </script>
 </body>
 </html>
