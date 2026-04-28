@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+    <title>Racing Pro: Fixed Layout</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+    <style>
+        .glass { backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.1); }
+        body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; touch-action: none; background: #064e3b; display: flex; justify-content: center; }
+        
+        #road {
+            width: 85%; height: 100vh; background: #1e293b; position: absolute; bottom: 0;
+            border-left: 6px solid #fbbf24; border-right: 6px solid #fbbf24; overflow: hidden;
+            z-index: 10;
+        }
+
+        .lane-line {
+            position: absolute; left: 50%; width: 8px; height: 100%; transform: translateX(-50%);
+            background-image: linear-gradient(to bottom, #fbbf24 0%, #fbbf24 50%, transparent 50%, transparent 100%);
+            background-size: 8px 100px;
+        }
+
+        /* HUD: Moved way up to top 4% to stop car overlap */
+        .hud-container { 
+            position: fixed; top: 4%; width: 100%; 
+            display: flex; flex-direction: column; align-items: center; 
+            z-index: 100; pointer-events: none; 
+        }
+        
+        /* PLAYER CAR: Forced to bottom via CSS to prevent top-spawning */
+        #player-car {
+            position: absolute; width: 55px; height: 100px; z-index: 50;
+            bottom: 15% !important; left: 50%; transform: translateX(-50%);
+            filter: drop-shadow(0 15px 15px rgba(0,0,0,0.6));
+        }
+
+        .enemy-car {
+            position: absolute; width: 55px; height: 100px; z-index: 45;
+            filter: drop-shadow(0 10px 10px rgba(0,0,0,0.4));
+        }
+
+        .btn-xl { width: 80px; height: 80px; }
+        .gas-xl { width: 110px; height: 170px; }
+        #crash-flash { position: fixed; inset: 0; background: red; opacity: 0; pointer-events: none; z-index: 400; transition: opacity 0.1s; }
+    </style>
+</head>
+<body class="font-['Manrope'] select-none">
+
+    <div id="crash-flash"></div>
+    <div id="road"><div id="road-lines" class="lane-line"></div></div>
+
+    <div class="hud-container">
+        <div class="flex items-baseline text-white italic font-black drop-shadow-2xl">
+            <span id="speedo" style="font-size: 65px; line-height: 1;">000</span>
+            <span style="font-size: 20px; margin-left: 8px;">KM/H</span>
+        </div>
+        <div class="flex gap-4 mt-1">
+            <div class="bg-black/60 text-yellow-400 border border-yellow-400/30 px-4 py-1 font-black text-[10px] rounded-full">SCORE: <span id="score">0</span></div>
+            <div class="bg-black/60 text-white border border-white/20 px-4 py-1 font-black text-[10px] rounded-full">BEST: <span id="hiScore">0</span></div>
+        </div>
+    </div>
+
+    <div id="startScreen" class="fixed inset-0 z-[500] bg-black/80 flex items-center justify-center">
+        <button onclick="startGame()" class="bg-yellow-400 text-black px-12 py-5 rounded-full font-black text-2xl shadow-2xl">START RACE</button>
+    </div>
+
+    <div id="gameOver" class="fixed inset-0 z-[500] bg-black/95 flex-col items-center justify-center hidden">
+        <h1 class="text-white text-6xl font-black italic mb-2">CRASHED</h1>
+        <button onclick="startGame()" class="bg-white text-black px-12 py-4 rounded-full font-black text-xl">TRY AGAIN</button>
+    </div>
+
+    <!-- UI Controls Pushed to Extreme Corners -->
+    <div class="fixed bottom-10 left-6 z-[200] flex gap-4">
+        <button id="leftBtn" class="glass btn-xl rounded-full flex items-center justify-center"><span class="material-symbols-outlined text-white text-5xl">arrow_back</span></button>
+        <button id="rightBtn" class="glass btn-xl rounded-full flex items-center justify-center"><span class="material-symbols-outlined text-white text-5xl">arrow_forward</span></button>
+    </div>
+
+    <div class="fixed bottom-10 right-6 z-[200] flex gap-4 items-end">
+        <button id="brakeBtn" class="glass btn-xl rounded-2xl flex items-center justify-center text-white font-black text-xs active:bg-red-500/40">BRAKE</button>
+        <button id="gasBtn" class="glass gas-xl rounded-3xl flex flex-col items-center justify-center bg-white/5 active:bg-yellow-400/20">
+            <span class="text-white font-black text-xl">GAS</span>
+            <span class="material-symbols-outlined text-white text-7xl">bolt</span>
+        </button>
+    </div>
+
+    <img id="player-car" src="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTIwIDI1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB4PSIyMCIgeT0iMTAiIHdpZHRoPSI4MCIgaGVpZ2h0PSIyMzAiIHJ4PSI4IiBmaWxsPSIjZGMyNjI2IiBzdHJva2U9IiMwMDAiIHN0cm9rZS13aWR0aD0iNCIvPgogIDxyZWN0IHg9IjMwIiB5PSI3MCIgd2lkdGg9IjYwIiBoZWlnaHQ9IjEwMCIgcng9IjQiIGZpbGw9IiMzMzMiLz4KPC9zdmc+">
+
+    <script>
+        let speed = 0, carX = 50, score = 0, roadOff = 0, gameActive = false;
+        let keys = {}, enemies = [];
+        let hiScore = localStorage.getItem('raceHi') || 0;
+
+        const car = document.getElementById('player-car');
+        const lines = document.getElementById('road-lines');
+        document.getElementById('hiScore').innerText = hiScore;
+
+        function startGame() {
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('gameOver').style.display = 'none';
+            score = 0; speed = 0; carX = 50;
+            enemies.forEach(e => e.el.remove());
+            enemies = [];
+            gameActive = true;
+            update();
+        }
+
+        window.onkeydown = (e) => keys[e.code] = true;
+        window.onkeyup = (e) => keys[e.code] = false;
+
+        function update() {
+            if (!gameActive) return;
+
+            // Physics Logic
+            if (keys['Space'] || keys['ArrowUp'] || keys['KeyW']) speed = Math.min(450, speed + 7);
+            else if (keys['ShiftLeft'] || keys['ArrowDown'] || keys['KeyS']) speed = Math.max(0, speed - 15);
+            else speed = Math.max(0, speed - 2.5);
+
+            let steer = 0;
+            if (keys['ArrowLeft'] || keys['KeyA']) steer = -2.2;
+            if (keys['ArrowRight'] || keys['KeyD']) steer = 2.2;
+            
+            carX = Math.max(15, Math.min(85, carX + steer));
+            car.style.left = carX + "%";
+            car.style.transform = `translateX(-50%) rotate(${steer * 4}deg)`;
+
+            // Visuals
+            roadOff += (speed / 5);
+            lines.style.backgroundPositionY = roadOff + "px";
+            document.getElementById('speedo').innerText = Math.floor(speed).toString().padStart(3, '0');
+            
+            if (speed > 10) {
+                score += (speed / 200);
+                document.getElementById('score').innerText = Math.floor(score);
+            }
+
+            if (speed > 50 && Math.random() < (0.015 + (score/90000))) spawnEnemy();
+            
+            updateEnemies();
+            requestAnimationFrame(update);
+        }
+
+        function spawnEnemy() {
+            const el = document.createElement('img');
+            el.src = "data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMTIwIDI1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB4PSIyMCIgeT0iMTAiIHdpZHRoPSI4MCIgaGVpZ2h0PSIyMzAiIHJ4PSI4IiBmaWxsPSIjMDU5NmY2IiBzdHJva2U9IiMwMDAiIHN0cm9rZS13aWR0aD0iNCIvPjwvc3ZnPg==";
+            el.className = 'enemy-car';
+            el.style.left = (Math.random() * 60 + 20) + "%";
+            el.style.top = "-150px";
+            el.style.transform = "rotate(180deg) translateX(50%)";
+            document.getElementById('road').appendChild(el);
+            enemies.push({ el, y: -150 });
+        }
+
+        function updateEnemies() {
+            const pR = car.getBoundingClientRect();
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                let e = enemies[i];
+                e.y += (speed / 10) + 7;
+                e.el.style.top = e.y + "px";
+
+                const eR = e.el.getBoundingClientRect();
+                if (!(pR.right-12 < eR.left+12 || pR.left+12 > eR.right-12 || pR.bottom-12 < eR.top+12 || pR.top+12 > eR.bottom-12)) {
+                    gameActive = false;
+                    document.getElementById('crash-flash').style.opacity = 1;
+                    setTimeout(() => {
+                        document.getElementById('crash-flash').style.opacity = 0;
+                        if (score > hiScore) localStorage.setItem('raceHi', Math.floor(score));
+                        document.getElementById('gameOver').style.display = 'flex';
+                    }, 100);
+                }
+                if (e.y > window.innerHeight) { e.el.remove(); enemies.splice(i, 1); }
+            }
+        }
+
+        const bind = (id, code) => {
+            const b = document.getElementById(id);
+            b.ontouchstart = (e) => { e.preventDefault(); keys[code] = true; };
+            b.ontouchend = (e) => { e.preventDefault(); keys[code] = false; };
+        };
+        bind('leftBtn', 'ArrowLeft'); bind('rightBtn', 'ArrowRight');
+        bind('gasBtn', 'Space'); bind('brakeBtn', 'ShiftLeft');
+    </script>
+</body>
+</html>
