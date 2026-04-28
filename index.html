@@ -121,11 +121,9 @@
 
         function loop() {
             if (!gameActive) return;
-
-            if (inputs.gas) speed = Math.min(180, speed + 2.5);
-            else if (inputs.brake) speed = Math.max(0, speed - 8);
-            else speed = Math.max(0, speed - 1.5);
-
+            if (inputs.gas) speed = Math.min(120, speed + 1.2); 
+            else if (inputs.brake) speed = Math.max(0, speed - 5); 
+            else speed = Math.max(0, speed - 0.8); 
             let steer = 0;
             if (inputs.left) steer = -2.8;
             if (inputs.right) steer = 2.8;
